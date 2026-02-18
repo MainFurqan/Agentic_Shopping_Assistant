@@ -1,0 +1,9 @@
+-> Designed and implemented an end-to-end agentic commerce system that converts natural language shopping
+queries into structured constraints using OpenAI GPT-4o Mini as an intent-extraction interface. 
+-> Architected modular agent components including AgentGoal, State Management, Planner, Action, and Observation following agent-based system design principles. 
+-> Built a goal-driven planning pipeline to transform user constraints (budget, delivery timeline, preferences) into executable product discovery tasks.
+-> Developed a Product Discovery Engine leveraging OpenAI GPT-4.1 Mini with web-search tool integration for real-time product sourcing. 
+-> Implemented orchestration logic to manage agent loop: planning → action → observation → state update.
+-> Developed production-ready backend APIs using FastAPI for scalable service integration. 
+-> Built interactive frontend interface using Streamlit for conversational shopping experience. 
+-> Containerized the complete application using Docker to ensure portability and deployment consistency.
