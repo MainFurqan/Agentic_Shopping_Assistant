@@ -98,17 +98,20 @@ def chat(session_id: str, request: ChatRequest):
         missing = []
         c = agent_goal.constraints
 
+        if c is None or c.item_name is None:
+            missing.append("What you want?\n")
+
         if c is None or c.budget <= 0:
             missing.append("budget")
 
         if c is None or c.delivery_deadline_days <= 0:
-            missing.append("delivery deadline (in days)")
+            missing.append("delivery deadline")
 
         if c is None or c.size is None:
             missing.append("size")
 
         if c is None or c.style is None:
-            missing.append("style")
+            missing.append("Preferred style")
 
         question = "Please provide your " + ", ".join(missing) + "."
         conversation_history.append({"role": "assistant", "content": question})
@@ -145,7 +148,7 @@ def chat(session_id: str, request: ChatRequest):
         )
 
     return ChatResponse(
-        response=results + "\n\nAre you satisfied with these recommendations?",
+        response=results + "\n\nAre you satisfied with these recommendations? \n If not, Please tell me why?",
         satisfied=False,
         constraints=agent_goal.constraints.__dict__
     )

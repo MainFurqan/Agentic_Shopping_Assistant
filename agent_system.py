@@ -35,6 +35,7 @@ class LLMInterface:
     Format:
 
     {
+    "item_name": string,
     "budget": number or null,
     "delivery_deadline_days": number or null,
     "size": string or null,
@@ -63,11 +64,11 @@ class LLMInterface:
 
 @dataclass
 class GoalConstraints:
-    budget: float
-    delivery_deadline_days: int
+    item_name: Optional[str] = None
+    budget: Optional[float] = None
+    delivery_deadline_days: Optional[int] = None
     size: Optional[str] = None
     style: Optional[str] = None
-
 
 @dataclass
 class AgentGoal:
@@ -81,6 +82,7 @@ class AgentGoal:
 
     def set_constraints(
         self,
+        item_name: str,
         budget: float,
         delivery_deadline_days: int,
         size: Optional[str] = None,
@@ -88,6 +90,7 @@ class AgentGoal:
     ):
         """Capture user constraints into the goal."""
         self.constraints = GoalConstraints(
+            item_name=item_name,
             budget=budget,
             delivery_deadline_days=delivery_deadline_days,
             size=size,
@@ -98,12 +101,15 @@ class AgentGoal:
         if self.constraints is None:
             return False
 
-        return (
-            self.constraints.budget > 0 and
-            self.constraints.delivery_deadline_days > 0 and
-            self.constraints.size is not None and
-            self.constraints.style is not None
-        )
+        c = self.constraints
+
+        return all([
+            c.item_name is not None,
+            c.budget is not None and c.budget > 0,
+            c.delivery_deadline_days is not None and c.delivery_deadline_days > 0,
+            c.size is not None,
+            c.style is not None
+        ])
 
     
 
@@ -117,6 +123,9 @@ class AgentGoal:
         """
 
         # Validate required fields
+        if "item_name" not in llm_output:
+            raise ValueError("Missing required field: item_name")
+        
         if "budget" not in llm_output:
             raise ValueError("Missing required field: budget")
 
@@ -135,6 +144,7 @@ class AgentGoal:
     
         # Apply constraints using existing contract method
         self.set_constraints(
+            item_name=llm_output["item_name"],
             budget=budget,
             delivery_deadline_days=delivery_deadline_days,
             size=size,
@@ -146,12 +156,16 @@ class AgentGoal:
         """
         Incrementally update constraints from LLM output.
         """
+
         if self.constraints is None:
             # Initialize empty constraint object
             self.constraints = GoalConstraints(
                 budget=0,
                 delivery_deadline_days=0
-            )
+            )        
+
+        if llm_output.get("item_name") is not None:
+            self.constraints.item_name = llm_output["item_name"]
 
         if llm_output.get("budget") is not None:
             self.constraints.budget = float(llm_output["budget"])
@@ -252,6 +266,7 @@ class ProductDiscoveryEngine:
         Find professional outfit items available online.
 
         Requirements:
+        - Item name: {constraints.item_name}
         - Budget under ${constraints.budget}
         - Delivery within {constraints.delivery_deadline_days} days
         - Size: {constraints.size}
@@ -261,9 +276,15 @@ class ProductDiscoveryEngine:
         """
 
         response = self.client.responses.create(
-            model="gpt-4.1-mini",
-            tools=[{"type": "web_search"}],
-            input=search_query,
+        model="gpt-4.1-mini",
+        tools=[{
+            "type": "web_search",
+            "user_location": {
+                "type": "approximate",
+                "country": "PK"
+            }
+        }],
+        input=search_query,
         )
 
         try:
